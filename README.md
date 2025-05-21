@@ -1,11 +1,12 @@
 # DAIC-Template
-> PNU x Upstage: DOCUMENT AI CHALLENGE 리포지토리 템플릿입니다. 아래 마크다운을 프로젝트 리포지토리 형식에 맞춰서 리드미를 작성해주시면 됩니다.
+> **PNU x Upstage: DOCUMENT AI CHALLENGE 리포지토리 템플릿입니다. 아래 마크다운을 프로젝트 리포지토리 형식에 맞춰서 리드미를 작성해주시면 됩니다.**
 
 * `>`로 작성된 부분은 없애고 작성해주시면 됩니다.
 * 해당 리포지토리를 fork해서 그대로 사용해주시면 됩니다. fork시 리포지토리 이름은 `DAIC-[TEAM_NAME]`으로 해주세요.
 * 제출 마감일 이전까지 GitHub 리포지토리 main 브랜치에 커밋이 반영되어 있어야 유효 제출로 간주됩니다.
 * README.md는 심사 기준과 연결된 내용을 의식하여 작성하는 것이 중요합니다 (예: API 활용, 문제 해결 효과 등).
 
+<br>
 
 ```md
 # [프로젝트 이름]
@@ -42,7 +43,7 @@
 ## 🔧 설치 및 사용 방법
 > 리포지토리 클론 이후 application을 실행할 수 있는 명령어를 작성해주세요.
 > 실행할 수 있는 환경이 제한되어 있는 경우, 이곳에 배포 환경을 알려주세요.
-> 실제로 배포하고 있다면, 배포 중인 사이트를 알려주세도 됩니다.
+> 실제로 배포하고 있다면, 배포 중인 사이트를 알려주셔도 됩니다.
 > 아래는 예시입니다.
 
 \```bash
@@ -53,7 +54,7 @@ pip install -r requirements.txt
 
 ## 📁 프로젝트 구조
 > 프로젝트 루트 디렉토리에서 주요 파일 및 폴더의 역할 및 목적을 작성해주세요.
-> 필요없다고 생각되는 부분은 작성하지 않으셔도 됩니다.
+> 필요없다고 생각되는 부분은 생략하셔도 됩니다.
 > 아래는 예시입니다.
 
 \```bash
@@ -75,9 +76,9 @@ project-name/
 
 | 이름  | 역할          | GitHub                                       |
 | --- | ----------- | -------------------------------------------- |
-| 개발자1 | 팀장 / 백엔드 개발 | [@AID](https://github.com/yerimkim)     |
-| 개발자2 | 모델 개발       | [@boramlee](https://github.com/boramlee)     |
-| 디자인1 | 디자인    | [@sojungpark](https://github.com/sojungpark) |
+| 개발자1 | 팀장 / 백엔드 개발 | [@developer1](https://github.com/developer1)     |
+| 개발자2 | 모델 개발       | [@developer2](https://github.com/developer2)     |
+| 디자인1 | 디자인    | [@designer1](https://github.com/designer1) |
 
 ## 💡 참고 자료 및 아이디어 출처 (Optional)
 > 프로젝트를 개발하면서 참고했던 논문 및 기타 문헌이 있으시다면 첨부해주세요.
