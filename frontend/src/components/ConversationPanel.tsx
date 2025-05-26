@@ -137,6 +137,11 @@ When you believe sufficient information has been gathered (e.g., after 4-5 turns
 
   // 응답 제출 핸들러
   const handleSubmit = async () => {
+    if (isRecording) {
+      stopRecording();
+      // stopRecording은 비동기적으로 녹음을 중지하므로, 약간의 지연 후 전송을 진행합니다.
+      await new Promise(resolve => setTimeout(resolve, 300));
+    }
     if (!userInput.trim()) {
       alert('응급상황을 입력해주세요.');
       return;
