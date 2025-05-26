@@ -345,8 +345,7 @@ When you believe sufficient information has been gathered (e.g., after 4-5 turns
       mediaRecorderRef.current.stop();
       mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
       setIsRecording(false);
-      addMessage("system", "🔍 음성을 텍스트로 변환 중...");
-      
+            
       // 실시간 음성 인식 중지
       stopRecognition();
       
