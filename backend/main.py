@@ -1,10 +1,13 @@
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
-from openai import OpenAI # openai 라이브러리 임포트
-from pydantic import BaseModel # 요청 바디 유효성 검사를 위해 추가
-
+from openai import OpenAI
+from pydantic import BaseModel
+import tempfile
+import whisper
+import json
+from fastapi.responses import JSONResponse
 
 # 환경 변수 로드
 load_dotenv()
@@ -18,6 +21,9 @@ client = OpenAI(
     api_key=UPSTAGE_API_KEY,
     base_url="https://api.upstage.ai/v1"
 )
+
+# Whisper 모델 로드
+whisper_model = whisper.load_model("base")  # 처음 실행 시 자동으로 모델 다운로드
 
 # 요청 바디의 메시지 형식을 정의합니다.
 class Message(BaseModel):
@@ -43,10 +49,19 @@ app.add_middleware(
 async def read_root():
     return {"message": "EmergencyAI Backend is running!"}
 
-# TODO: Add RAG and LLM endpoints
-
-# RAG 파이프라인 설정 (예시 - 지금은 사용하지 않음)
-# qa_chain = RetrievalQA.from_chain_type(llm=llm, chain_type="stuff", retriever=None) # retriever=None 임시
+@app.post("/transcribe")
+async def transcribe(audio: UploadFile = File(...)):
+    try:
+        # 임시 파일로 저장
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".webm") as tmp:
+            tmp.write(await audio.read())
+            tmp_path = tmp.name
+        # whisper로 변환
+        result = whisper_model.transcribe(tmp_path, language="ko")
+        os.remove(tmp_path)
+        return {"text": result["text"]}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
 # 사용자 질문을 포함한 대화 기록을 받아 Solar LLM을 통해 답변을 생성하는 엔드포인트
 @app.post("/chat")
