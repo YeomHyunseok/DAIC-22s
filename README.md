@@ -73,6 +73,16 @@ Upstage의 Document Parse API와 Solar LLM을 활용하여 **신뢰도 높은 �
 
 ## 🔧 설치 및 사용 방법
 
+[프론트엔드]
+cd frontend
+npm install      # (처음 한 번만)
+npm run dev
+
+[백엔드]
+cd backend
+source venve/Scripts/activate   # *가상환경 접속* 
+pip install -r requirements.txt   # (처음 한 번만)
+uvicorn main:app --reload --port 8000
 
 
 ## 📁프로젝트 구조
