@@ -24,6 +24,49 @@ interface ConversationPanelProps {
   onShowBriefing: () => void;
 }
 
+// Web Speech API 타입 정의
+interface SpeechRecognitionEvent extends Event {
+  resultIndex: number;
+  results: SpeechRecognitionResultList;
+}
+
+interface SpeechRecognitionResultList {
+  length: number;
+  item(index: number): SpeechRecognitionResult;
+  [index: number]: SpeechRecognitionResult;
+}
+
+interface SpeechRecognitionResult {
+  isFinal: boolean;
+  [index: number]: SpeechRecognitionAlternative;
+}
+
+interface SpeechRecognitionAlternative {
+  transcript: string;
+  confidence: number;
+}
+
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: (event: SpeechRecognitionEvent) => void;
+  start(): void;
+  stop(): void;
+}
+
+interface SpeechRecognitionConstructor {
+  new (): SpeechRecognition;
+  prototype: SpeechRecognition;
+}
+
+declare global {
+  interface Window {
+    SpeechRecognition: SpeechRecognitionConstructor;
+    webkitSpeechRecognition: SpeechRecognitionConstructor;
+  }
+}
+
 const ConversationPanel: React.FC<ConversationPanelProps> = ({
   isInitialized,
   initializeSystem,
@@ -38,8 +81,13 @@ const ConversationPanel: React.FC<ConversationPanelProps> = ({
   const [turnCount, setTurnCount] = useState(0);
   const [currentConfidence, setCurrentConfidence] = useState(0);
   const [isAILoading, setIsAILoading] = useState(false); // AI 응답 대기 상태
+  const [isRecording, setIsRecording] = useState(false); // 음성 녹음 상태 추가
   
   const conversationLogRef = useRef<HTMLDivElement>(null); // 자동 스크롤을 위한 ref
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const [wsConnection, setWsConnection] = useState<WebSocket | null>(null);
 
   // 시스템 프롬프트 정의
   const systemPrompt: BackendMessage = {
@@ -72,6 +120,15 @@ When you believe sufficient information has been gathered (e.g., after 4-5 turns
   useEffect(() => {
       onUpdateStats(turnCount, currentConfidence); // turnCount 또는 currentConfidence 변경 시 호출
   }, [turnCount, currentConfidence, onUpdateStats]); // onUpdateStats도 의존성 배열에 포함
+
+  // WebSocket 연결 설정
+  useEffect(() => {
+    return () => {
+      if (wsConnection) {
+        wsConnection.close();
+      }
+    };
+  }, [wsConnection]);
 
   const addMessage = (type: MessageData['type'], content: string, sender?: string) => {
     const timestamp = new Date().toLocaleTimeString();
@@ -228,12 +285,113 @@ When you believe sufficient information has been gathered (e.g., after 4-5 turns
   
   // TODO: showBriefingScreen 함수 (prop으로 전달받거나 이 컴포넌트에서 라우팅 처리)
 
+  // Web Speech API (실시간 텍스트 변환)
+  const startRecognition = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'ko-KR';
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      let interimTranscript = '';
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        interimTranscript += event.results[i][0].transcript;
+      }
+      setUserInput(interimTranscript);
+    };
+    recognitionRef.current = recognition;
+    recognition.start();
+  };
+
+  const stopRecognition = () => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+    }
+  };
+
+  // 음성 녹음 시작
+  const startRecording = async () => {
+    try {
+      setUserInput(''); // 입력창 초기화
+      audioChunksRef.current = []; // 오디오 청크 초기화
+      
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          audioChunksRef.current.push(e.data);
+        }
+      };
+
+      recorder.start();
+      mediaRecorderRef.current = recorder;
+      setIsRecording(true);
+      addMessage("system", "🎤 음성 녹음 중...");
+      
+      // 실시간 음성 인식 시작
+      startRecognition();
+    } catch (error) {
+      console.error('Error accessing microphone:', error);
+      addMessage("system", "❌ 마이크 접근 권한이 필요합니다.");
+    }
+  };
+
+  // 음성 녹음 중지
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+      setIsRecording(false);
+      addMessage("system", "🔍 음성을 텍스트로 변환 중...");
+      
+      // 실시간 음성 인식 중지
+      stopRecognition();
+      
+      // 녹음된 음성을 Whisper로 처리
+      if (audioChunksRef.current.length > 0) {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        convertSpeechToText(audioBlob);
+      }
+    }
+  };
+
+  // 음성을 텍스트로 변환 (Whisper 사용)
+  const convertSpeechToText = async (audioBlob: Blob) => {
+    try {
+      const formData = new FormData();
+      formData.append('audio', audioBlob, 'recording.webm');
+
+      const response = await fetch('http://localhost:8000/transcribe', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('음성 변환에 실패했습니다.');
+      }
+
+      const data = await response.json();
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      // 입력창에 변환된 텍스트 표시
+      setUserInput(data.text);
+    } catch (error) {
+      console.error('Error converting speech to text:', error);
+      addMessage("system", "❌ 음성 변환 중 오류가 발생했습니다.");
+    }
+  };
+
   return (
     <div className="conversation-panel">
       {!isInitialized ? (
         // 초기화 화면
         <div className="initialization-screen">
-          <h2>🚀 EmergencyAI 시스템 초기화</h2>
+          <h2>EmergencyAI 시스템 초기화</h2>
           <p>의학 데이터베이스와 AI 엔진을 준비합니다.</p>
 
           {/* 진행 바 (나중에 구현) */}
@@ -294,9 +452,22 @@ When you believe sufficient information has been gathered (e.g., after 4-5 turns
                 disabled={isAILoading}
               ></textarea>
             </div>
-            <button className="submit-button" onClick={handleSubmit} disabled={isAILoading}>
-              {isAILoading ? <div className="loading-spinner"></div> : '전송'}
-            </button>
+            <div className="button-group">
+              <button 
+                className={`mic-button ${isRecording ? 'recording' : ''}`} 
+                onClick={isRecording ? stopRecording : startRecording}
+                disabled={isAILoading}
+              >
+                {isRecording ? '⏹️ 녹음 중지' : '🎤 음성 입력'}
+              </button>
+              <button 
+                className="submit-button" 
+                onClick={handleSubmit} 
+                disabled={isAILoading}
+              >
+                {isAILoading ? <div className="loading-spinner"></div> : '전송'}
+              </button>
+            </div>
           </div>
         </div>
         // TODO: 브리핑 화면 (briefing-screen) 조건부 렌더링 추가
