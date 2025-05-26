@@ -78,20 +78,38 @@ async def chat_with_ai(request: ChatRequest):
         return {"error": "Messages list is empty"}
 
     try:
-        patient_state = [msg.content for msg in request.messages if msg.role == "user"][-1]
-        query = generate_search_query(patient_state)
+        # 전체 대화 기록
+         conversation = [{"role": msg.role, "content": msg.content} for msg in request.messages]
 
-        docs_with_scores = vectorstore.similarity_search_with_score(query, k=5)
-        docs = [doc for doc, score in docs_with_scores]
-        scores = [score for doc, score in docs_with_scores]
+        # ✅ 가장 최근 user 입력 추출
+         patient_state = [msg.content for msg in request.messages if msg.role == "user"][-1]
+         query = generate_search_query(patient_state)
 
-        rag_response, need_more_info = llm_infer_treatment_and_missing_info(
-            docs, scores, patient_state, threshold=0.7, solar_model=solar_model
+        # Step 2: 벡터 검색 + 필터
+         docs_with_scores = vectorstore.similarity_search_with_score(query, k=5)
+         docs = [doc for doc, score in docs_with_scores]
+         scores = [score for doc, score in docs_with_scores]
+
+        # Step 3: 치료 요약 및 추가 정보 유무 판단
+         rag_response, required_info = llm_infer_treatment_and_missing_info(
+            docs, scores, patient_state, threshold=0.2, solar_model=solar_model
         )
-        return {
+
+         conversation.append({"role": "assistant", "content": rag_response})
+
+         
+        # Step 5: 필요시 최종 브리핑 생성
+         should_end = not required_info
+         medical_brief = None
+         if should_end:
+            medical_brief = generate_medical_brief(conversation, solar_model)
+
+         return {
             "response": rag_response,
-            "should_end": not need_more_info
-        }
+            "should_end": should_end,
+            "conversation": conversation,
+            "medical_brief": medical_brief
+         }
 
     except Exception as e:
         print(f"Solar LLM error: {e}")
@@ -108,7 +126,7 @@ def llm_infer_treatment_and_missing_info(docs, scores, current_state, threshold,
         if not filtered_docs:
             return "관련된 논문이 충분하지 않습니다.", False
 
-        reference_list = [doc.metadata.source for doc in filtered_docs]
+        reference_list = [doc.metadata["source"] for doc in filtered_docs if "source" in doc.metadata]
         treatment_by_pdf = {}
 
         for title in reference_list:
