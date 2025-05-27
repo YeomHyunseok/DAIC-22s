@@ -73,6 +73,19 @@ Upstage의 Document Parse API와 Solar LLM을 활용하여 **신뢰도 높은 �
 
 ## 🔧 설치 및 사용 방법
 
+### ✅ [프론트엔드]
+
+bash
+- cd frontend            # 프론트엔드 디렉토리로 이동
+- npm install            # 처음 한 번만: 의존성 설치
+- npm run dev            # 개발 서버 실행 (기본 포트: 5173)
+
+### ✅ [백엔드]
+- cd backend                         # 백엔드 디렉토리로 이동
+- source venv/Scripts/activate       # 가상환경 활성화 (Windows 기준)
+- pip install -r requirements.txt    # 처음 한 번만: 의존성 설치
+- uvicorn main:app --reload --port 8000  # FastAPI 서버 실행
+
 
 
 ## 📁프로젝트 구조

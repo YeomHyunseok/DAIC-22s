@@ -64,6 +64,11 @@ function VoiceRecognition() {
 
   // 음성 파일 서버로 전송
   const handleSend = async () => {
+    if (isRecording) {
+      stopRecording();
+      // stopRecording은 비동기적으로 녹음을 중지하므로, 약간의 지연 후 전송을 진행합니다.
+      await new Promise(resolve => setTimeout(resolve, 300));
+    }
     if (audioChunks.length === 0) return;
     const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
     const formData = new FormData();
