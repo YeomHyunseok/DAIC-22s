@@ -10,7 +10,8 @@ from pydantic import BaseModel
 from openai import OpenAI
 from langchain_upstage import UpstageEmbeddings, ChatUpstage
 from langchain_pinecone import PineconeVectorStore
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
+from langchain.prompts import ChatPromptTemplate
 
 # ==== 환경 설정 ====
 load_dotenv()
@@ -72,48 +73,143 @@ async def transcribe(audio: UploadFile = File(...)):
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
 
+import re
+
+def format_ai_response(text: str) -> str:
+    # Add blank lines before numbered items
+    return re.sub(r"(?<!\n)([1-4]\.)", r"\n\n\1", text).strip()
+
 @app.post("/chat")
 async def chat_with_ai(request: ChatRequest):
     if not request.messages:
         return {"error": "Messages list is empty"}
 
     try:
-        # 전체 대화 기록
-         conversation = [{"role": msg.role, "content": msg.content} for msg in request.messages]
+        user_turns = sum(1 for msg in request.messages if msg.role == "user")
 
-        # ✅ 가장 최근 user 입력 추출
-         patient_state = [msg.content for msg in request.messages if msg.role == "user"][-1]
-         query = generate_search_query(patient_state)
+        # Base role prompt for all turns
+        base_prompt = """
+        [ROLE]
+        You are an emergency AI assistant that supports paramedics during real-time incidents.
+        The human speaking to you is a paramedic reporting from the field, not a patient.
 
-        # Step 2: 벡터 검색 + 필터
-         docs_with_scores = vectorstore.similarity_search_with_score(query, k=5)
-         docs = [doc for doc, score in docs_with_scores]
-         scores = [score for doc, score in docs_with_scores]
+        You must strictly follow a 4-turn structure.
+        Each turn has a specific role and output format, which you must obey.
 
-        # Step 3: 치료 요약 및 추가 정보 유무 판단
-         rag_response, required_info = llm_infer_treatment_and_missing_info(
-            docs, scores, patient_state, threshold=0.2, solar_model=solar_model
+        [RESPONSE FORMAT FOR ALL TURNS]
+        - Always write numbered responses like this:
+            1. …
+            2. …
+            3. …
+            4. …
+        - Leave exactly one blank line between each numbered line.
+        - Each numbered line should be a short paragraph (1–3 sentences).
+        - Do NOT include section titles such as “Summary” or “Additional Questions.”
+        - Do NOT generate responses for later turns ahead of time.
+        - Always stay within the current turn only.
+        """
+
+        # Append turn-specific behavior
+        if user_turns == 0:
+            turn_instructions = """
+            [TURN 1]
+
+            IMPORTANT: This is the first turn of the conversation. The paramedic has just reported a general symptom like "difficulty breathing".
+
+            Your job:
+            - DO NOT give any medical advice, clinical instruction, or emergency procedure.
+            - DO NOT describe any action like “place the patient comfortably” or “give oxygen”.
+            - DO NOT mention Turn 2, 3, or 4.
+            - Only ask questions to gather essential patient information.
+
+            You MUST ask **all** of the following:
+                1. What is the patient’s exact age and sex?
+                2. Is the patient conscious or unconscious?
+                3. Where is the pain or discomfort located, if any?
+                4. Is there any visible bleeding?
+                5. Are there any signs of shock (cold skin, sweating, confusion)?
+                6. When did the symptom (e.g. breathing difficulty) begin?
+
+            Format Rules:
+            - Your response must contain exactly 4 numbered lines starting with 1., 2., 3., 4.
+            - Each line must be a short question, in natural conversational tone.
+            - DO NOT include section titles or explanations.
+            - Leave one blank line between each question.
+            """
+
+        elif user_turns == 1:
+            turn_instructions = """
+            [TURN 2]
+            The paramedic has answered your initial questions.
+
+            Your task:
+            - Briefly explain initial emergency actions based on the condition (e.g. airway check, bleeding control)
+            - Ask for any critical missing information (e.g. time/location of accident, medications, underlying conditions)
+
+            Do NOT predict diagnoses or provide final summaries.
+            Do NOT include Turn 3 or Turn 4 content.
+            Stay within Turn 2 only.
+            """
+        elif user_turns == 2:
+            turn_instructions = """
+            [TURN 3]
+            The paramedic has provided additional patient details.
+
+            Your task:
+            - Suggest possible conditions or injuries based on reported symptoms
+            - Recommend a continued course of action
+            - Ask for any final details needed before ending the case
+
+            Do NOT give transport instructions yet.
+            Do NOT conclude the conversation.
+            Only write content for Turn 3.
+            """
+        else:
+            turn_instructions = """
+            [TURN 4]
+            You now have enough information to make a final decision.
+
+            Your task:
+            - Provide final treatment guidance
+            - Clearly state whether the patient should be transported to a hospital
+            - End the interaction with a closing sentence
+
+            Do NOT repeat earlier turn content.
+            Only write content for Turn 4.
+            """
+
+        system_content = base_prompt + turn_instructions
+
+        # Build message history
+        messages = [SystemMessage(content=system_content)]
+        for msg in request.messages:
+            if msg.role == "user":
+                messages.append(HumanMessage(content=msg.content))
+            elif msg.role == "assistant":
+                messages.append(AIMessage(content=msg.content))
+
+        # Generate AI response
+        response = solar_model.invoke(messages)
+        rag_response = format_ai_response(response.content.strip())
+
+        should_end = user_turns >= 4 and user_turns <=2 and any(
+            keyword in rag_response.lower() for keyword in [
+                "이송", "병원", "전송"
+            ]
         )
 
-         conversation.append({"role": "assistant", "content": rag_response})
-
-         
-        # Step 5: 필요시 최종 브리핑 생성
-         should_end = not required_info
-         medical_brief = None
-         if should_end:
-            medical_brief = generate_medical_brief(conversation, solar_model)
-
-         return {
+        return {
             "response": rag_response,
             "should_end": should_end,
-            "conversation": conversation,
-            "medical_brief": medical_brief
-         }
+            "conversation": [m.dict() if hasattr(m, 'dict') else {"role": m.type, "content": m.content} for m in messages],
+            "medical_brief": None
+        }
 
     except Exception as e:
         print(f"Solar LLM error: {e}")
         return {"error": f"An error occurred: {e}", "should_end": False}
+
+
 
 # ===================== 확장: RAG 기반 치료 정보 추론 =====================
 
@@ -168,15 +264,35 @@ def llm_infer_treatment_and_missing_info(docs, scores, current_state, threshold,
             f"[{src}]\n{summary}" for src, summary in treatment_by_pdf.items()
         ])
         reasoning_prompt = f"""
+        [시스템 역할 및 출력 지침]
+        너는 응급상황을 다루는 의료 AI 상담원이다. 반드시 아래 4턴 구조로 대답해라:
+
+        1. 첫 번째 턴: 사람이 어떤 말을 하면, AI는 반드시 환자의 성별, 나이, 간단한 상황, 의식 여부 등을 묻는다.
+
+        2. 두 번째 턴: 사람이 대답한 정보를 바탕으로, 적절한 응급조치를 제시하고 추가로 필요한 정보를 요청한다.
+
+        3. 세 번째 턴: 추가 정보를 통해 의심 증상과 치료 방향을 제시하고, 마지막으로 확인할 정보를 요청한다.
+
+        4. 네 번째 턴: 최종 응답을 바탕으로 적절한 처치를 제안하고, 병원 전송 필요 여부를 설명하며 대화를 종료한다.
+
+        각 응답은 다음 규칙에 따라 출력하라:
+        - 반드시 `1.`, `2.`, `3.`, `4.`로 줄 번호를 붙인다.
+        - 각 줄은 줄바꿈을 포함해 **한 줄씩 띄워서 출력**하라.
+        - 정보가 부족한 경우에도 빈칸 없이 네 줄 모두 출력하라.
+        - 의료 용어는 정확하게 사용하고, 일반인도 이해할 수 있게 작성하라.
+
+        ---
+
+        [참고 문서 요약]
         다음은 여러 응급의학 문서에서 추출한 치료 관련 요약 정보야:
         {all_treatments}
 
+        [환자 상태 입력]
         현재 응급환자의 상태는 다음과 같아:
-        \"\"\"{current_state}\"\"\" 
+        \"\"\"{current_state}\"\"\"
 
-        위 정보를 바탕으로 환자에게 어떤 치료를 해야 하는지 설명하고,
-        추가로 알아야 할 정보가 있다면 무엇인지 구체적으로 알려줘.
-        추가 정보가 필요 없다면 반드시 "추가 정보 필요 없음"이라고 말해줘.
+        위 정보를 바탕으로 환자에게 어떤 처치를 수행해야 하는지 설명하고, 추가로 알아야 할 정보가 있다면 명확하게 알려줘.  
+        **만약 추가 정보가 필요 없다면 반드시 `"추가 정보 필요 없음"`이라고 명시해.**
         """
         final_response = solar_model.invoke([HumanMessage(content=reasoning_prompt)])
         output = final_response.content.strip()

@@ -92,14 +92,7 @@ const ConversationPanel: React.FC<ConversationPanelProps> = ({
   // 시스템 프롬프트 정의
   const systemPrompt: BackendMessage = {
       role: 'system',
-      content: `You are an Emergency AI Agent designed to assist paramedics in managing medical emergencies.
-Your goal is to gather critical information about the patient's condition and the emergency situation through a conversation with the paramedic.
-Based on the information gathered, you should provide guidance, ask relevant follow-up questions, and eventually help determine if enough information has been collected for a hospital briefing.
-Maintain a professional, calm, and informative tone. Focus on medically relevant details.
-Avoid making definitive diagnoses or giving medical instructions that are outside the scope of assisting in information gathering.
-Keep your responses concise and focused on obtaining necessary information or providing guidance based on gathered facts.
-The conversation history will be provided in each turn. Use the previous messages to maintain context and avoid asking repetitive questions if the information has already been provided by the paramedic or yourself.
-When you believe sufficient information has been gathered (e.g., after 4-5 turns or when key details like patient status, vital signs, injury type/location are known), indicate that a hospital briefing can be prepared.`,
+      content: `너는 응급상황 AI 상담원이다. 반드시 아래 4턴 구조로 대답해라:\n1. 첫 번째 턴: 사람이 어떤말을 하면 AIagent는 환자 성별, 나이, 간단한 상황, 의식여부를 물어본다.\n2. 두 번째 턴: 첫번째 턴의 질문에 대해 사람이 대답하면, 그 대답을 통해 적절한 조치를 출력하고 추가 정보 요구.\n3. 세 번째 턴: 추가 정보에 대한 답변을 통해 의심 증상과 적절한 조치를 출력하고 추가 정보 요구.\n4. 마지막 턴: 세번째 턴에 대한 답변을 통해 적절한 조치를 추천하고 병원 전송하겠다고 말하며 대화를 종료한다.`
   };
 
   // 초기화 완료 시 시스템 메시지 추가
