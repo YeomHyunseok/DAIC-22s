@@ -20,7 +20,7 @@ interface ConversationPanelProps {
   ragStatus: string;
   aiStatus: string;
   hospitalStatus: string;
-  onUpdateStats: (newTurnCount: number, newConfidence: number) => void;
+  onUpdateStats: (newTurnCount: number, newConfidence: number, newConversation: BackendMessage[]) => void;
   onShowBriefing: () => void;
 }
 
@@ -111,8 +111,17 @@ const ConversationPanel: React.FC<ConversationPanelProps> = ({
 
   // 턴 수 또는 확신도 변경 시 상위 컴포넌트로 전달
   useEffect(() => {
-      onUpdateStats(turnCount, currentConfidence); // turnCount 또는 currentConfidence 변경 시 호출
-  }, [turnCount, currentConfidence, onUpdateStats]); // onUpdateStats도 의존성 배열에 포함
+      const backendMessages: BackendMessage[] = [
+          systemPrompt,
+          ...messages
+              .filter(msg => msg.type !== 'system') // 시스템 메시지 제외
+              .map(msg => ({
+                  role: (msg.type === 'paramedic' ? 'user' : 'assistant') as 'user' | 'assistant',
+                  content: msg.content
+              }))
+      ];
+      onUpdateStats(turnCount, currentConfidence, backendMessages);
+  }, [turnCount, currentConfidence, messages, onUpdateStats]);
 
   // WebSocket 연결 설정
   useEffect(() => {
@@ -211,6 +220,18 @@ const ConversationPanel: React.FC<ConversationPanelProps> = ({
           if (data.should_end) {
               await new Promise(resolve => setTimeout(resolve, 1000));
               addMessage("system", "📋 충분한 정보를 수집했습니다. 병원 브리핑을 생성합니다.");
+              
+              // 현재까지의 대화 내용을 포함하여 브리핑으로 전환
+              const finalMessages: BackendMessage[] = [
+                  systemPrompt,
+                  ...messages
+                      .filter(msg => msg.type !== 'system')
+                      .map(msg => ({
+                          role: (msg.type === 'paramedic' ? 'user' : 'assistant') as 'user' | 'assistant',
+                          content: msg.content
+                      }))
+              ];
+              onUpdateStats(turnCount, currentConfidence, finalMessages);
               onShowBriefing();
           }
 

@@ -4,6 +4,11 @@ import ConversationPanel from './components/ConversationPanel'
 import ControlPanel from './components/ControlPanel'
 import BriefingPanel from './components/BriefingPanel'
 
+interface Message {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
 function App() {
   const [isInitialized, setIsInitialized] = useState(false)
   const [ragStatus, setRagStatus] = useState('loading')
@@ -17,6 +22,7 @@ function App() {
   const [turnCount, setTurnCount] = useState(0)
   const [currentConfidence, setCurrentConfidence] = useState(0)
   const [showBriefing, setShowBriefing] = useState(false)
+  const [conversation, setConversation] = useState<Message[]>([])
 
   const initializeSystem = async () => {
     // 초기화 시작 시 버튼 비활성화
@@ -64,9 +70,10 @@ function App() {
   }, [])
 
   // ConversationPanel에서 턴 수와 확신도 업데이트를 처리하도록 함수 전달
-  const handleUpdateStats = (newTurnCount: number, newConfidence: number) => {
+  const handleUpdateStats = (newTurnCount: number, newConfidence: number, newConversation: Message[]) => {
     setTurnCount(newTurnCount)
     setCurrentConfidence(newConfidence)
+    setConversation(newConversation)
   }
 
   // ConversationPanel에서 브리핑 화면으로 전환을 요청할 때 호출될 함수
@@ -80,7 +87,7 @@ function App() {
     setTurnCount(0)
     setCurrentConfidence(0)
     setShowBriefing(false) // 대화 화면으로 전환
-    // TODO: ConversationPanel의 메시지 목록 등 상태 초기화 로직 호출
+    setConversation([]) // 대화 내용 초기화
   }
   
   // TODO: 시스템 리셋 핸들러 구현 (ControlPanel에 전달)
@@ -136,8 +143,8 @@ function App() {
           <BriefingPanel
             confidenceScore={currentConfidence} // App 상태의 확신도 전달
             isEmergency={currentConfidence >= 80} // 확신도 80% 이상이면 응급으로 가정
-            // TODO: Pass priority plan data, send to hospital handler, start new case handler
             onStartNewCase={handleStartNewCase} // 새로운 케이스 시작 함수 전달
+            conversation={conversation} // 대화 내용 전달
           />
         )}
 

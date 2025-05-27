@@ -3,7 +3,7 @@ import tempfile
 import whisper
 import json
 from dotenv import load_dotenv
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, File, UploadFile, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -12,6 +12,7 @@ from langchain_upstage import UpstageEmbeddings, ChatUpstage
 from langchain_pinecone import PineconeVectorStore
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from langchain.prompts import ChatPromptTemplate
+from fastapi import HTTPException
 
 # ==== 환경 설정 ====
 load_dotenv()
@@ -56,6 +57,9 @@ class Message(BaseModel):
 
 class ChatRequest(BaseModel):
     messages: list[Message]
+
+class BriefingRequest(BaseModel):
+    conversation: list[Message]
 
 @app.get("/")
 async def root():
@@ -104,7 +108,7 @@ async def chat_with_ai(request: ChatRequest):
             4. …
         - Leave exactly one blank line between each numbered line.
         - Each numbered line should be a short paragraph (1–3 sentences).
-        - Do NOT include section titles such as “Summary” or “Additional Questions.”
+        - Do NOT include section titles such as "Summary" or "Additional Questions."
         - Do NOT generate responses for later turns ahead of time.
         - Always stay within the current turn only.
         """
@@ -118,12 +122,12 @@ async def chat_with_ai(request: ChatRequest):
 
             Your job:
             - DO NOT give any medical advice, clinical instruction, or emergency procedure.
-            - DO NOT describe any action like “place the patient comfortably” or “give oxygen”.
+            - DO NOT describe any action like "place the patient comfortably" or "give oxygen".
             - DO NOT mention Turn 2, 3, or 4.
             - Only ask questions to gather essential patient information.
 
             You MUST ask **all** of the following:
-                1. What is the patient’s exact age and sex?
+                1. What is the patient's exact age and sex?
                 2. Is the patient conscious or unconscious?
                 3. Where is the pain or discomfort located, if any?
                 4. Is there any visible bleeding?
@@ -341,3 +345,78 @@ def generate_medical_brief(conversation, solar_model):
     """
     response = solar_model.invoke([HumanMessage(content=prompt)])
     return response.content.strip()
+
+@app.post("/generate_medical_brief")
+async def generate_medical_brief(request: Request):
+    try:
+        data = await request.json()
+        conversation = data.get("conversation", [])
+        
+        if not conversation:
+            raise HTTPException(status_code=400, detail="대화 내용이 없습니다.")
+        
+        # 대화 내용을 하나의 문자열로 결합
+        conversation_text = "\n".join([
+            f"{'응급구조사' if msg['role'] == 'user' else 'AI'}: {msg['content']}"
+            for msg in conversation
+        ])
+        
+        print("대화 내용:", conversation_text)  # 디버깅용 로그
+        
+        # LLM에 전달할 프롬프트 생성
+        prompt = f"""너는 응급상황을 분석하고 의료 브리핑을 작성하는 AI 의료 전문가입니다.
+아래 대화 내용을 바탕으로 구조화된 의료 브리핑을 작성해주세요.
+
+대화 내용:
+{conversation_text}
+
+다음 형식으로 정확히 응답해주세요:
+
+1. 환자 상태 요약
+- 환자의 기본 정보 (나이, 성별)
+- 현재 상태와 주요 증상
+- 의식 상태
+- 생체징후 (알려진 경우)
+
+2. 치료 및 처치 요약
+- 현재까지 시행된 처치
+- 추가로 필요한 치료
+- 약물 투여 내역 (있는 경우)
+
+3. 추가 정보
+- 알레르기나 기저질환
+- 사고/증상 발생 시점
+- 특이사항이나 주의점
+
+4. 최종 판단
+- 의심되는 질환/상태
+- 응급도 평가
+- 권장 조치사항
+
+각 섹션은 반드시 bullet point(-)로 시작하는 항목들로 구성해주세요.
+각 항목은 구체적이고 명확하게 작성해주세요.
+모든 섹션에 대해 최소한 하나 이상의 항목을 작성해주세요."""
+
+        # Solar LLM 호출
+        response = solar_model.invoke([HumanMessage(content=prompt)])
+        content = response.content.strip()
+        
+        print("LLM 응답:", content)  # 디버깅용 로그
+        
+        return {"content": content}
+        
+    except Exception as e:
+        print(f"브리핑 생성 중 오류: {str(e)}")  # 디버깅용 로그
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/send_to_hospital")
+async def send_to_hospital(briefing_data: dict):
+    try:
+        # TODO: 실제 병원 전송 로직 구현
+        # 현재는 성공 응답만 반환
+        return {"status": "success", "message": "병원으로 브리핑이 전송되었습니다."}
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"병원 전송 중 오류가 발생했습니다: {str(e)}"}
+        )
