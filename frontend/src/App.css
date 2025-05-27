@@ -48,8 +48,9 @@
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #3B4A6B;
+    margin: 0;
+    font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
     min-height: 100vh;
     color: #333;
     overflow-x: hidden;
@@ -563,4 +564,79 @@ body {
     border: 1px solid #c3e6cb;
     margin: 15px 0;
     text-align: center;
+}
+
+.app-header {
+  background: #D95C4B;
+  color: #fff;
+  padding: 32px 0 16px 0;
+  text-align: center;
+  border-radius: 16px;
+  margin-bottom: 24px;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 2.2rem;
+  font-weight: bold;
+}
+
+.app-header p {
+  margin: 8px 0 0 0;
+  font-size: 1.1rem;
+  color: #fff;
+}
+
+.tab-bar {
+  display: flex;
+  background: #4666B0;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  padding: 0 8px;
+}
+
+.tab-bar .tab {
+  flex: 1;
+  color: #fff;
+  text-align: center;
+  padding: 12px 0;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.tab-bar .tab.active {
+  background: #3B4A6B;
+}
+
+.card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(59,74,107,0.08);
+  padding: 24px;
+  margin-bottom: 24px;
+  color: #222B45;
+}
+
+.button, .submit-button {
+  background: #4666B0;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 12px;
+  transition: background 0.2s;
+}
+
+.button:hover, .submit-button:hover {
+  background: #3B4A6B;
+}
+
+.list-dot {
+  color: #D95C4B;
+  margin-right: 8px;
 }
