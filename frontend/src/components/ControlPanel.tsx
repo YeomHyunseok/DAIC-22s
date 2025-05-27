@@ -24,10 +24,6 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
           <div className="status-number">{turnCount}</div>
           <div className="status-label">대화 턴</div>
         </div>
-        <div className="status-card">
-          <div className="status-number">{currentConfidence}%</div>
-          <div className="status-label">현재 확신도</div>
-        </div>
       </div>
 
       <div className="demo-scenarios">

@@ -137,6 +137,13 @@ When you believe sufficient information has been gathered (e.g., after 4-5 turns
 
   // 응답 제출 핸들러
   const handleSubmit = async () => {
+    // 전송 버튼을 누를 때 음성 인식도 중지
+    stopRecognition();
+    if (isRecording) {
+      stopRecording();
+      // stopRecording은 비동기적으로 녹음을 중지하므로, 약간의 지연 후 전송을 진행합니다.
+      await new Promise(resolve => setTimeout(resolve, 300));
+    }
     if (!userInput.trim()) {
       alert('응급상황을 입력해주세요.');
       return;
@@ -150,17 +157,13 @@ When you believe sufficient information has been gathered (e.g., after 4-5 turns
     setIsAILoading(true);
 
     const currentInput = userInput; // 스냅샷 저장
-    setUserInput('');
+    setUserInput(''); // 전송 버튼을 누를 때만 입력창을 비움
 
     // 사용자 입력 메시지를 먼저 추가
     addMessage('paramedic', currentInput);
 
     // 백엔드 API 호출 및 응답 처리 함수 호출
-    // addMessage가 상태 업데이트를 비동기적으로 처리하므로,
-    // 업데이트된 messages 상태를 사용하기 위해 콜백 함수를 사용하거나
-    // 또는 handleSubmit 내에서 백엔드 호출 로직을 직접 처리합니다.
-    // 여기서는 handleSubmit 내에서 직접 처리하는 방식으로 변경합니다.
-     await processUserInput(currentInput);
+    await processUserInput(currentInput);
 
     setIsAILoading(false);
   };
@@ -294,11 +297,11 @@ When you believe sufficient information has been gathered (e.g., after 4-5 turns
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.onresult = (event: SpeechRecognitionEvent) => {
-      let interimTranscript = '';
-      for (let i = event.resultIndex; i < event.results.length; ++i) {
-        interimTranscript += event.results[i][0].transcript;
+      let fullTranscript = '';
+      for (let i = 0; i < event.results.length; ++i) {
+        fullTranscript += event.results[i][0].transcript;
       }
-      setUserInput(interimTranscript);
+      setUserInput(fullTranscript);
     };
     recognitionRef.current = recognition;
     recognition.start();
@@ -345,7 +348,8 @@ When you believe sufficient information has been gathered (e.g., after 4-5 turns
       mediaRecorderRef.current.stop();
       mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
       setIsRecording(false);
-            
+      addMessage("system", "🔍 음성을 텍스트로 변환 중...");
+      
       // 실시간 음성 인식 중지
       stopRecognition();
       
