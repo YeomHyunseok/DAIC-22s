@@ -19,11 +19,9 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
     <div className="control-panel">
       <h3>🎛️ 시스템 제어</h3>
 
-      <div className="status-info">
-        <div className="status-card">
-          <div className="status-number">{turnCount}</div>
-          <div className="status-label">대화 턴</div>
-        </div>
+      <div className="status-card">
+        <div className="status-number">{turnCount}</div>
+        <div className="status-label">대화 턴</div>
       </div>
 
       <div className="demo-scenarios">

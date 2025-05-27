@@ -126,39 +126,57 @@ def llm_infer_treatment_and_missing_info(docs, scores, current_state, threshold,
         if not filtered_docs:
             return "관련된 논문이 충분하지 않습니다.", False
 
-        reference_list = [doc.metadata["source"] for doc in filtered_docs if "source" in doc.metadata]
+        reference_list = [doc.metadata.get("source", f"doc_{i}") for i, doc in enumerate(filtered_docs)]
         treatment_by_pdf = {}
 
-        for title in reference_list:
-            with open(f'./references/{title}.json', 'r', encoding='utf-8') as f:
-                data = json.load(f)
-                pdf_content = data.get("full_text", "")
-                prompt = f"""
-                너는 응급의학 논문이나 문서를 분석해서 '치료(처치)' 관련 내용만 요약하는 AI야.
-                다음은 '{title}'라는 문서의 전체 내용이야:
-                \"\"\"{pdf_content}\"\"\"
-                이 문서에서 '치료 또는 처치에 관련된 핵심 내용'만 뽑아서 요약해줘.
-                """
-                response = solar_model.invoke([HumanMessage(content=prompt)])
-                treatment_by_pdf[title] = response.content.strip()
+        for i, title in enumerate(reference_list):
+            try:
+                with open(f'./references/{title}.json', 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    pdf_content = data.get("full_text", "")
+            except FileNotFoundError:
+                print(f"[경고] 파일 없음: {title}.json — Solar LLM이 사용자 상태만 기반으로 판단")
+                continue  # PDF가 없으면 해당 문서는 건너뜀
 
+            prompt = f"""
+            너는 응급의학 논문이나 문서를 분석해서 '치료(처치)' 관련 내용만 요약하는 AI야.
+            다음은 '{title}'라는 문서의 전체 내용이야:
+            \"\"\"{pdf_content}\"\"\" 
+            이 문서에서 '치료 또는 처치에 관련된 핵심 내용'만 뽑아서 요약해줘.
+            """
+            response = solar_model.invoke([HumanMessage(content=prompt)])
+            treatment_by_pdf[title] = response.content.strip()
+
+        # PDF 기반 요약이 하나도 없을 경우, 직접 상태 기반 응답
         if not treatment_by_pdf:
-            return "관련된 PDF 문서 내용을 찾을 수 없습니다.", False
+            fallback_prompt = f"""
+            다음은 현재 응급환자의 상태야:
+            \"\"\"{current_state}\"\"\" 
 
+            위 상태를 보고 어떤 처치나 치료를 해야 할지 설명해줘.
+            추가로 알아야 할 정보가 있다면 그것도 구체적으로 말해줘.
+            """
+            fallback_response = solar_model.invoke([HumanMessage(content=fallback_prompt)])
+            output = fallback_response.content.strip()
+            additional_info_needed = not (
+                "추가 정보 필요 없음" in output or "더 필요한 정보는 없습니다" in output
+            )
+            return output, additional_info_needed
+
+        # 정상적으로 치료 요약된 경우
         all_treatments = "\n\n".join([
             f"[{src}]\n{summary}" for src, summary in treatment_by_pdf.items()
         ])
-
         reasoning_prompt = f"""
         다음은 여러 응급의학 문서에서 추출한 치료 관련 요약 정보야:
         {all_treatments}
 
         현재 응급환자의 상태는 다음과 같아:
-        \"\"\"{current_state}\"\"\"
+        \"\"\"{current_state}\"\"\" 
 
         위 정보를 바탕으로 환자에게 어떤 치료를 해야 하는지 설명하고,
         추가로 알아야 할 정보가 있다면 무엇인지 구체적으로 알려줘.
-        추가 정보가 필요 없다면 반드시 \"추가 정보 필요 없음\"이라고 말해줘.
+        추가 정보가 필요 없다면 반드시 "추가 정보 필요 없음"이라고 말해줘.
         """
         final_response = solar_model.invoke([HumanMessage(content=reasoning_prompt)])
         output = final_response.content.strip()
@@ -168,7 +186,7 @@ def llm_infer_treatment_and_missing_info(docs, scores, current_state, threshold,
         )
 
         return output, additional_info_needed
-    
+
     except Exception as e:
         print(f"[RAG 처리 오류]: {e}")
         return "치료 정보를 분석하는 중 오류가 발생했습니다.", False
