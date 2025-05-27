@@ -80,8 +80,8 @@ async def transcribe(audio: UploadFile = File(...)):
 import re
 
 def format_ai_response(text: str) -> str:
-    # Add blank lines before numbered items
-    return re.sub(r"(?<!\n)([1-4]\.)", r"\n\n\1", text).strip()
+    # 단순히 텍스트를 반환하도록 수정
+    return text.strip()
 
 @app.post("/chat")
 async def chat_with_ai(request: ChatRequest):
