@@ -32,7 +32,8 @@ solar_model = ChatUpstage(api_key=UPSTAGE_API_KEY, model="solar-pro")
 
 # Pinecone 벡터 DB 초기화
 embedding_model = UpstageEmbeddings(api_key=UPSTAGE_API_KEY, model="embedding-query")
-index_name = "emergency-medical-kb"
+index_name = "medical-paper"
+
 vectorstore = PineconeVectorStore(
     index_name=index_name,
     embedding=embedding_model,
