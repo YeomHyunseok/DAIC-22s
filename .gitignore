@@ -5,3 +5,4 @@ __pycache__/
 voice2text_v2/backend/.env
 
 
+backend/.env
