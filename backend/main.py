@@ -32,7 +32,7 @@ solar_model = ChatUpstage(api_key=UPSTAGE_API_KEY, model="solar-pro")
 
 # Pinecone 벡터 DB 초기화
 embedding_model = UpstageEmbeddings(api_key=UPSTAGE_API_KEY, model="embedding-query")
-index_name = "langchain-demo"
+index_name = "emergency-medical-kb"
 vectorstore = PineconeVectorStore(
     index_name=index_name,
     embedding=embedding_model,
@@ -192,15 +192,21 @@ async def chat_with_ai(request: ChatRequest):
             elif msg.role == "assistant":
                 messages.append(AIMessage(content=msg.content))
 
+
+        # RAG 처리 추가
+        patient_state = "\n".join([msg.content for msg in messages if isinstance(msg, HumanMessage)])
+        docs, scores = vectorstore.similarity_search_with_score(patient_state, k=3)
+        
+        rag_response, required_info = llm_infer_treatment_and_missing_info(
+            docs, scores, patient_state, threshold=0.2, solar_model=solar_model
+        )
+
+        messages.append(AIMessage(content=rag_response))
+
         # Generate AI response
         response = solar_model.invoke(messages)
         rag_response = format_ai_response(response.content.strip())
 
-        # should_end = user_turns >= 4 and user_turns <=2 and any(
-        #     keyword in rag_response.lower() for keyword in [
-        #         "이송", "병원", "전송"
-        #     ]
-        # )
         should_end = user_turns == 4
 
         return {
@@ -229,7 +235,7 @@ def llm_infer_treatment_and_missing_info(docs, scores, current_state, threshold,
 
         reference_list = [doc.metadata.get("source", f"doc_{i}") for i, doc in enumerate(filtered_docs)]
         treatment_by_pdf = {}
-
+        print(reference_list)
         for i, title in enumerate(reference_list):
             try:
                 with open(f'./references/{title}.json', 'r', encoding='utf-8') as f:
