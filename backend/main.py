@@ -192,7 +192,7 @@ async def chat_with_ai(request: ChatRequest):
         response = solar_model.invoke(messages)
         rag_response = format_ai_response(response.content.strip())
 
-        should_end = user_turns >= 4 and user_turns <=2 and any(
+        should_end = user_turns >= 4 and any(
             keyword in rag_response.lower() for keyword in [
                 "이송", "병원", "전송"
             ]
