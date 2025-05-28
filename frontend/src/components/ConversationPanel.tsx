@@ -70,9 +70,6 @@ declare global {
 const ConversationPanel: React.FC<ConversationPanelProps> = ({
   isInitialized,
   initializeSystem,
-  ragStatus,
-  aiStatus,
-  hospitalStatus,
   onUpdateStats,
   onShowBriefing,
 }) => {
@@ -244,15 +241,6 @@ const ConversationPanel: React.FC<ConversationPanelProps> = ({
       // TODO: updateLastUpdate() 로직 구현 (상위 컴포넌트에서 관리될 수도 있음)
   };
 
-  // --- 시뮬레이션용 기존 JS 함수들 (필요에 따라 React 상태/props 사용하도록 수정) ---
-  const checkEmergencyKeywords = (input: string) => {
-      const emergencyKeywords = [
-          '의식잃음', '의식없음', '심정지', '호흡곤란', '대량출혈', '쇼크',
-          '교통사고', '추락', '외상', '골절', '심장통증', '가슴통증', '뇌졸중', '경련'
-      ];
-      
-      return emergencyKeywords.some(keyword => input.includes(keyword));
-  };
 
   const calculateConfidence = (currentTurn: number) => {
       const baseConfidence = 0.3;
@@ -262,45 +250,6 @@ const ConversationPanel: React.FC<ConversationPanelProps> = ({
       
       return Math.min(baseConfidence + turnBonus /* + infoBonus*/, 0.95);
   };
-
-  const getImmediateAction = (input: string) => {
-      if (input.includes('의식잃음') || input.includes('의식없음')) {
-          return "기도 확보 및 경추 고정, GCS 점수 측정";
-      } else if (input.includes('호흡곤란')) {
-          return "산소 공급 15L/min, 기도 확인";
-      } else if (input.includes('심장') || input.includes('가슴통증')) {
-          return "12유도 심전도 측정, 니트로글리세린 투여 고려";
-      } else if (input.includes('출혈')) {
-          return "직접 압박지혈, 혈압 측정, 수액 공급 준비";
-      } else {
-          return "기본 생체징후 측정 (혈압, 맥박, 호흡, 체온)";
-      }
-  };
-
-  const generateQuestions = (input: string, currentTurn: number) => {
-      const allQuestions = [
-          "환자의 나이와 성별을 정확히 알려주세요",
-          "GCS(Glasgow Coma Scale) 점수를 측정해주세요",
-          "양쪽 동공의 크기와 빛 반응을 확인해주세요",
-          "혈압, 맥박, 호흡수를 측정해주세요",
-          "환자가 통증을 호소하는 부위가 있나요?",
-          "알려진 알레르기나 복용 중인 약물이 있나요?",
-          "사고 당시 상황을 더 자세히 설명해주세요",
-          "현재 환자의 의식 상태는 어떤가요?",
-          "호흡 패턴이 규칙적인가요?",
-          "목이나 척추 부위에 손상 징후가 보이나요?"
-      ];
-
-      // 턴에 따라 다른 질문 반환
-      const startIndex = (currentTurn - 1) * 3;
-      return allQuestions.slice(startIndex, startIndex + 3);
-  };
-
-  const shouldEndConversation = (currentTurn: number, confidence: number) => {
-      return currentTurn >= 4 || confidence >= 0.9; // 종료 조건 약간 변경
-  };
-  
-  // TODO: showBriefingScreen 함수 (prop으로 전달받거나 이 컴포넌트에서 라우팅 처리)
 
   // Web Speech API (실시간 텍스트 변환)
   const startRecognition = () => {
