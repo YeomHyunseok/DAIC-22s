@@ -69,20 +69,31 @@ Upstage의 Document Parse API와 Solar LLM을 활용하여 **신뢰도 높은 �
 
 ## 🔧 설치 및 사용 방법
 
+### 기본 요구사항  : node.js(LTS 버전 권장) , phython 3.11 (호환성을 위해 3.11 버전 필수)
+
 ### ✅ [프론트엔드]
 
-bash
+git bash
 - cd frontend            # 프론트엔드 디렉토리로 이동
 - npm install            # 처음 한 번만: 의존성 설치 (node.js가 기본설정으로 설치되어 있어야 합니다.)
 - npm run dev            # 개발 서버 실행 (기본 포트: 5173)
 
 ### ✅ [백엔드]
-- 새로운 bash 실행
+- 새로운 git bash 실행
 - cd backend                         # 백엔드 디렉토리로 이동
+- rm -rf venv
+- py -3.11 -m venv venv              # 기본환경으로 파이썬 3.11 버전이 설치되어 있어야 합니다.
 - source venv/Scripts/activate       # 가상환경 활성화 (Windows 기준)
-- pip install -r requirements.txt    # 필요한 패키지들 설치
-- pip install -r requirements.txt    # 처음 한 번만: 의존성 설치
-- uvicorn main:app --reload --port 8000  # FastAPI 서버 실행
+- phython --version                  # Python 3.11.x 확인
+- python -m pip install -r requirements.txt    # 필요한 패키지들 설치
+- python -m pip install -r requirements.txt    # 처음 한 번만: 의존성 설치
+- python -m uvicorn main:app --reload --port 8000  # FastAPI 서버 실행
+
+### 백엔드 실행 전에 backend 폴더에 .env 파일을 생성하고 다음 내용을 추가하세요:
+envUPSTAGE_API_KEY=your_upstage_api_key_here
+OPENAI_API_KEY=your_openai_api_key_here
+PINECONE_API_KEY=your_pinecone_api_key_here
+DEBUG=True
 
 
 ## 📁프로젝트 구조
