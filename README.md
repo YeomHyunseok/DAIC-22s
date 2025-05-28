@@ -89,10 +89,13 @@ git bash
 - python -m pip install -r requirements.txt    # 처음 한 번만: 의존성 설치
 - python -m uvicorn main:app --reload --port 8000  # FastAPI 서버 실행
 
-### 백엔드 실행 전에 backend 폴더에 .env 파일을 생성하고 다음 내용을 추가하세요:
-envUPSTAGE_API_KEY=your_upstage_api_key_here
+### ✅ 백엔드 실행 전에 backend 폴더에 .env 파일을 생성하고 다음 내용을 추가하세요:
+UPSTAGE_API_KEY=your_upstage_api_key_here
+
 OPENAI_API_KEY=your_openai_api_key_here
+
 PINECONE_API_KEY=your_pinecone_api_key_here
+
 DEBUG=True
 
 
