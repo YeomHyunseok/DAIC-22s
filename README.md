@@ -1,4 +1,4 @@
-# 🚨 Emergency AI Agent
+# 🚨 Emergency AI Agent 🚨
 
 ## 📌 개요
 **Emergency AI Agent**는 교통사고, 실신, 중증 외상 등 **응급 상황**에서 구조요원이 환자 상태를 음성으로 보고하면,  
