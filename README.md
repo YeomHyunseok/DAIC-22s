@@ -73,15 +73,14 @@ Upstage의 Document Parse API와 Solar LLM을 활용하여 **신뢰도 높은 �
 
 ### ✅ [프론트엔드]
 
-git bash
-'''
+```bash
 - cd frontend            # 프론트엔드 디렉토리로 이동
 - npm install            # 처음 한 번만: 의존성 설치 (node.js가 기본설정으로 설치되어 있어야 합니다.)
 - npm run dev            # 개발 서버 실행 (기본 포트: 5173)
-'''
+```
 ### ✅ [백엔드]
 - 새로운 git bash 실행
-'''
+  ```
 - cd backend                         # 백엔드 디렉토리로 이동
 - rm -rf venv
 - py -3.11 -m venv venv              # 기본환경으로 파이썬 3.11 버전이 설치되어 있어야 합니다.
@@ -90,7 +89,7 @@ git bash
 - python -m pip install -r requirements.txt    # 필요한 패키지들 설치
 - python -m pip install -r requirements.txt    # 처음 한 번만: 의존성 설치
 - python -m uvicorn main:app --reload --port 8000  # FastAPI 서버 실행
-'''
+  ```
 
 ### ✅ 백엔드 실행 전에 backend 폴더에 .env 파일을 생성하고 다음 내용을 추가하세요:
 UPSTAGE_API_KEY=your_upstage_api_key_here
