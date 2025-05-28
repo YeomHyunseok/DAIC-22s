@@ -77,7 +77,6 @@ bash
 - npm run dev            # 개발 서버 실행 (기본 포트: 5173)
 
 ### ✅ [백엔드]
-- Python 버전 3.11 권장
 - cd backend                         # 백엔드 디렉토리로 이동
 - source venv/Scripts/activate       # 가상환경 활성화 (Windows 기준)
 - pip install -r requirements.txt    # 필요한 패키지들 설치
