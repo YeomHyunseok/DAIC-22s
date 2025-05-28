@@ -92,6 +92,8 @@ Upstage의 Document Parse API와 Solar LLM을 활용하여 **신뢰도 높은 �
 ```
 
 ### ✅ 백엔드 실행 전에 backend 폴더에 .env 파일을 생성하고 다음 내용을 추가하세요:
+
+```bash
 UPSTAGE_API_KEY=your_upstage_api_key_here
 
 OPENAI_API_KEY=your_openai_api_key_here
@@ -99,7 +101,7 @@ OPENAI_API_KEY=your_openai_api_key_here
 PINECONE_API_KEY=your_pinecone_api_key_here
 
 DEBUG=True
-
+```
 
 ## 📁프로젝트 구조
 ![image](https://github.com/user-attachments/assets/c78dafc2-ab9e-4b1e-a2fd-64811cf2003f)
