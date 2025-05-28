@@ -80,7 +80,7 @@ Upstage의 Document Parse API와 Solar LLM을 활용하여 **신뢰도 높은 �
 ```
 ### ✅ [백엔드]
 - 새로운 git bash 실행
-  ```
+  ```bash
 - cd backend                         # 백엔드 디렉토리로 이동
 - rm -rf venv
 - py -3.11 -m venv venv              # 기본환경으로 파이썬 3.11 버전이 설치되어 있어야 합니다.
