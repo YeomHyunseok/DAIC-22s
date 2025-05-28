@@ -125,6 +125,51 @@ DEBUG=True
 ## 📁프로젝트 구조
 ![image](https://github.com/user-attachments/assets/c78dafc2-ab9e-4b1e-a2fd-64811cf2003f)
 
+```
+
+DAIC-22s/
+├── backend/                    # 백엔드 (FastAPI)
+│   ├── __pycache__/
+│   ├── venv/                   # 가상환경
+│   ├── .env                    # 환경 변수
+│   ├── main.py                 # FastAPI 진입점
+│   └── requirements.txt        # Python 패키지 목록
+│
+├── frontend/                   # 프론트엔드 (React + Vite)
+│   ├── .vite/
+│   ├── node_modules/
+│   ├── public/
+│   ├── src/                    # 프론트엔드 소스 코드
+│   │   ├── assets/             # 정적 자산 (이미지 등)
+│   │   ├── components/         # 주요 컴포넌트
+│   │   │   ├── BriefingPanel.tsx
+│   │   │   ├── ControlPanel.tsx
+│   │   │   ├── ConversationPanel.tsx
+│   │   │   ├── ConversationPanel.module.css
+│   │   │   ├── Message.tsx
+│   │   │   └── VoiceRecognitionButton.tsx
+│   │   ├── App.css
+│   │   ├── App.jsx
+│   │   ├── App.tsx
+│   │   ├── index.css
+│   │   ├── main.tsx
+│   │   └── vite-env.d.ts
+│   ├── .gitignore
+│   ├── eslint.config.js
+│   ├── index.html
+│   ├── package.json
+│   ├── package-lock.json
+│   ├── tsconfig.json
+│   ├── tsconfig.app.json
+│   ├── tsconfig.node.json
+│   └── vite.config.ts
+│
+├── reference/                 # RAG 기반 문서(json) 저장소
+│
+├── .gitignore
+└── README.md
+```
+
 
 ## 🧑‍🤝‍🧑팀원 소개 
 | 이름  | 역할                | GitHub                                     |
