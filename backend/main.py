@@ -159,7 +159,17 @@ def llm_infer_treatment_and_missing_info(docs, scores, current_state, threshold,
             try:
                 with open(f'../reference/{title}.json', 'r', encoding='utf-8') as f:
                     data = json.load(f)
-                    pdf_content = data.get("full_text", "")
+                    # data가 리스트인 경우 무작위로 3개의 full_text를 선택
+                    if isinstance(data, list):
+                        import random
+                        full_texts = [item.get("full_text", "") for item in data if item.get("full_text")]
+                        if len(full_texts) > 3:
+                            selected_texts = random.sample(full_texts, 3)
+                            pdf_content = "\n\n".join(selected_texts)
+                        else:
+                            pdf_content = "\n\n".join(full_texts)
+                    else:
+                        pdf_content = data.get("full_text", "")
             except FileNotFoundError:
                 print(f"[경고] 파일 없음: {title}.json — Solar LLM이 사용자 상태만 기반으로 판단")
                 continue  # PDF가 없으면 해당 문서는 건너뜀
