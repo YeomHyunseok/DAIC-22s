@@ -73,7 +73,7 @@ Upstage의 Document Parse API와 Solar LLM을 활용하여 **신뢰도 높은 �
 
 bash
 - cd frontend            # 프론트엔드 디렉토리로 이동
-- npm install            # 처음 한 번만: 의존성 설치
+- npm install            # 처음 한 번만: 의존성 설치 (node.js가 기본설정으로 설치되어 있어야 합니다.)
 - npm run dev            # 개발 서버 실행 (기본 포트: 5173)
 
 ### ✅ [백엔드]
