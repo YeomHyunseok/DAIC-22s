@@ -122,6 +122,15 @@ PINECONE_API_KEY=your_pinecone_api_key_here
 DEBUG=True
 ```
 
+### ✅ 데모 실행 방법
+1. 위의 방법에 따라 백엔드와 프론트엔드를 모두 실행
+2. 웹 브라우저에서 http://localhost:5173로 접속
+3. 시스템 초기화 버튼 클릭
+4. 음성 입력 버튼을 눌러 환자 상태를 말하면, AI가 실시간으로 증상 분석, 질문 생성, 병원 브리핑을 안내
+5. 3의 과정을 4번 반복하면 대화 종료
+6. 브리핑 및 심각도가 표시되고 병원으로 전송하기 버튼 클릭
+7. 3-6의 과정 반복
+
 ## 📁프로젝트 구조
 ![image](https://github.com/user-attachments/assets/c78dafc2-ab9e-4b1e-a2fd-64811cf2003f)
 
